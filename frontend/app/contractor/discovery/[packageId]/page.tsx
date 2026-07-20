@@ -27,14 +27,6 @@ interface PackageDetails {
   skills: string[] | null;
 }
 
-interface CostBreakdownRow {
-  item: string;
-  quantity: number;
-  unit: string;
-  rate: number;
-  total: number;
-}
-
 const PackageBiddingPage = () => {
   const router = useRouter();
   const { packageId } = useParams();
@@ -50,11 +42,6 @@ const PackageBiddingPage = () => {
   const [timelineStart, setTimelineStart] = useState('');
   const [timelineEnd, setTimelineEnd] = useState('');
   const [notes, setNotes] = useState('');
-
-  // Cost Breakdown Repeater (Default has one row)
-  const [breakdown, setBreakdown] = useState<CostBreakdownRow[]>([
-    { item: 'Initial Setup & Materials', quantity: 1, unit: 'LumpSum', rate: 0, total: 0 }
-  ]);
 
   useEffect(() => {
     const fetchPackageDetails = async () => {
@@ -83,42 +70,6 @@ const PackageBiddingPage = () => {
     }
   }, [packageId]);
 
-  // Handle updates to breakdown rows
-  const handleBreakdownChange = (index: number, field: keyof CostBreakdownRow, value: any) => {
-    setBreakdown((prev) => {
-      const updated = [...prev];
-      const row = { ...updated[index] };
-
-      if (field === 'quantity') {
-        row.quantity = Math.max(1, parseInt(value, 10) || 1);
-        row.total = row.quantity * row.rate;
-      } else if (field === 'rate') {
-        row.rate = Math.max(0, parseFloat(value) || 0);
-        row.total = row.quantity * row.rate;
-      } else if (field === 'item' || field === 'unit') {
-        (row as any)[field] = value;
-      }
-
-      updated[index] = row;
-      return updated;
-    });
-  };
-
-  const addBreakdownRow = () => {
-    setBreakdown((prev) => [
-      ...prev,
-      { item: '', quantity: 1, unit: 'Qty', rate: 0, total: 0 }
-    ]);
-  };
-
-  const removeBreakdownRow = (index: number) => {
-    if (breakdown.length === 1) return;
-    setBreakdown((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  // Calculate sum of breakdown items
-  const breakdownSum = breakdown.reduce((sum, item) => sum + item.total, 0);
-
   const handleSubmitBid = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -135,19 +86,6 @@ const PackageBiddingPage = () => {
       return;
     }
 
-    // Check if total items match proposed cost
-    if (Math.abs(breakdownSum - budgetVal) > 0.01) {
-      setErrorMsg(`Itemized cost breakdown sum (₹${breakdownSum.toLocaleString('en-IN')}) must exactly match the proposed budget (₹${budgetVal.toLocaleString('en-IN')}).`);
-      return;
-    }
-
-    // Validate breakdown rows description
-    const hasEmptyItem = breakdown.some(r => !r.item.trim());
-    if (hasEmptyItem) {
-      setErrorMsg('All cost breakdown lines must have description text.');
-      return;
-    }
-
     setSaving(true);
     try {
       const res = (await axiosInstance.post(`/discovery/packages/${packageId}/bid`, {
@@ -155,7 +93,15 @@ const PackageBiddingPage = () => {
         proposed_timeline_start: timelineStart,
         proposed_timeline_end: timelineEnd,
         proposal_notes: notes,
-        breakdown
+        breakdown: [
+          {
+            item: `${details?.name || 'Project Package Bid Allocation'}`,
+            quantity: 1,
+            unit: 'LumpSum',
+            rate: budgetVal,
+            total: budgetVal
+          }
+        ]
       })) as any;
 
       if (res.success) {
@@ -326,123 +272,11 @@ const PackageBiddingPage = () => {
                     />
                   </div>
 
-                  {/* Itemized Cost Breakdown repeater */}
-                  <div className="flex flex-col gap-2.5 border-t border-slate-800/40 pt-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Itemized Cost Breakdown</span>
-                        <span className="text-[10px] text-slate-500">Break costs into line items (must sum to proposed budget)</span>
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={addBreakdownRow}
-                        variant="secondary"
-                        size="sm"
-                        disabled={saving}
-                      >
-                        + Add Row
-                      </Button>
-                    </div>
-
-                    <div className="overflow-hidden border border-slate-800 rounded-xl mt-2 text-xs">
-                      <Table className="bg-transparent border-none">
-                        <TableHeader className="bg-slate-950/40">
-                          <TableRow>
-                            <TableHead className="py-2.5 px-3">Item Name/Description</TableHead>
-                            <TableHead className="py-2.5 px-3 w-16 text-center">Qty</TableHead>
-                            <TableHead className="py-2.5 px-3 w-16">Unit</TableHead>
-                            <TableHead className="py-2.5 px-3 w-28">Rate</TableHead>
-                            <TableHead className="py-2.5 px-3 w-24 text-right">Subtotal</TableHead>
-                            <TableHead className="py-2.5 px-3 w-12 text-center"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {breakdown.map((row, index) => (
-                            <TableRow key={index} className="hover:bg-transparent">
-                              <TableCell className="p-1 px-3">
-                                <input
-                                  type="text"
-                                  placeholder="E.g. Steel rebar supply"
-                                  value={row.item}
-                                  onChange={(e) => handleBreakdownChange(index, 'item', e.target.value)}
-                                  disabled={saving}
-                                  className="w-full bg-slate-900/60 border border-slate-800 focus:border-purple-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none"
-                                />
-                              </TableCell>
-                              <TableCell className="p-1 px-3">
-                                <input
-                                  type="number"
-                                  placeholder="1"
-                                  value={row.quantity}
-                                  onChange={(e) => handleBreakdownChange(index, 'quantity', e.target.value)}
-                                  disabled={saving}
-                                  className="w-full bg-slate-900/60 border border-slate-800 focus:border-purple-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 text-center outline-none"
-                                />
-                              </TableCell>
-                              <TableCell className="p-1 px-3">
-                                <input
-                                  type="text"
-                                  placeholder="Kg"
-                                  value={row.unit}
-                                  onChange={(e) => handleBreakdownChange(index, 'unit', e.target.value)}
-                                  disabled={saving}
-                                  className="w-full bg-slate-900/60 border border-slate-800 focus:border-purple-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none"
-                                />
-                              </TableCell>
-                              <TableCell className="p-1 px-3">
-                                <input
-                                  type="number"
-                                  placeholder="Rate"
-                                  value={row.rate || ''}
-                                  onChange={(e) => handleBreakdownChange(index, 'rate', e.target.value)}
-                                  disabled={saving}
-                                  className="w-full bg-slate-900/60 border border-slate-800 focus:border-purple-500 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none"
-                                />
-                              </TableCell>
-                              <TableCell className="p-1 px-3 text-right font-bold text-slate-300">
-                                ₹{row.total.toLocaleString('en-IN')}
-                              </TableCell>
-                              <TableCell className="p-1 px-3 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => removeBreakdownRow(index)}
-                                  disabled={breakdown.length === 1 || saving}
-                                  className="text-slate-500 hover:text-red-400 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Breakdown validation totals */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-950/60 border border-slate-900 rounded-xl mt-3 text-xs gap-3">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-slate-500 font-semibold uppercase tracking-wider text-[9px]">Calculated sum of items</span>
-                        <span className="text-white font-extrabold text-sm">₹{breakdownSum.toLocaleString('en-IN')}</span>
-                      </div>
-                      
-                      {proposedBudget && Math.abs(breakdownSum - parseFloat(proposedBudget)) > 0.01 && (
-                        <div className="text-amber-400 font-medium text-[11px] flex items-center gap-1.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          <span>Sum must equal proposed budget (₹{Number(proposedBudget).toLocaleString('en-IN')})</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <Button
                     type="submit"
                     variant="primary"
                     loading={saving}
-                    disabled={Math.abs(breakdownSum - parseFloat(proposedBudget)) > 0.01 || saving}
+                    disabled={saving}
                     className="mt-4"
                   >
                     File Work Proposal

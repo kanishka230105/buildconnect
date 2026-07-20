@@ -18,7 +18,7 @@ const Badge: React.FC<BadgeProps> = ({
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-full border transition-all duration-350 select-none';
   
   const sizeStyles = {
-    sm: 'px-2 py-0.5 text-[10px] leading-3 tracking-wide',
+    sm: 'px-2 py-0.5 text-[10px] leading-normal tracking-wide',
     md: 'px-2.5 py-1 text-xs leading-4 tracking-normal',
   };
 

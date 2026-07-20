@@ -20,6 +20,7 @@ router.post('/projects/:id/review', AdminController.reviewProjectApproval);
 // User Moderation
 router.get('/users', AdminController.getUsersList);
 router.post('/users/:id/suspend', AdminController.setUserSuspension);
+router.post('/users/:id/approve-edit', AdminController.approveEditRequest);
 
 // Reviews Moderation
 router.get('/reviews', AdminController.getReviewsList);

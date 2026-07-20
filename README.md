@@ -104,4 +104,48 @@ Contributions are what make the open-source community such an amazing place to l
 
 ## 📄 License
 
-Distributed under the MIT License. See [LICENSE](file:///d:/buildconnectproject/buildconnect/LICENSE) for more information.
+Distributed under the MIT License. See [LICENSE](file:///k:/buildconnect/LICENSE) for more information.
+
+---
+
+## 💅 Recent UI/UX Polish & Refactoring Updates
+
+We have recently refactored and polished the UI/UX, implemented metric navigation, and refactored dynamic document states. Here is a summary of the updates:
+
+### 1. Scrollable Builder Bid Review Modal
+* **File:** [Modal.tsx](file:///k:/buildconnect/frontend/components/ui/Modal.tsx)
+* **Adjustment:** Added `max-h-[calc(100vh-2rem)]` and `overflow-y-auto` to the modal container to prevent tall cost breakdown tables or negotiation forms from overflowing the screen.
+
+### 2. High-Contrast Global Buttons & Overrides
+* **File:** [globals.css](file:///k:/buildconnect/frontend/app/globals.css)
+* **Adjustment:** Fixed the light-theme contrast bug where text color of buttons containing `.text-white` would render as slate on cream background. Enforced white text for primary, secondary, and danger buttons. Added `.text-slate-200` to the dark-slate overrides to prevent light gray text visibility issues on white cards.
+* **File:** [Badge.tsx](file:///k:/buildconnect/frontend/components/ui/Badge.tsx)
+* **Adjustment:** Adjusted `sm` badge line-height from `leading-3` to `leading-normal` to prevent vertical text clipping.
+
+### 3. Sidebar Layout & Alignment Sizing (All Roles)
+* **Files:** [builder/layout.tsx](file:///k:/buildconnect/frontend/app/builder/layout.tsx), [contractor/layout.tsx](file:///k:/buildconnect/frontend/app/contractor/layout.tsx), [admin/layout.tsx](file:///k:/buildconnect/frontend/app/admin/layout.tsx)
+* **Adjustment:** Reconfigured vertical padding and margins on widgets. Added `leading-normal` to the Brand title inside the sidebar to ensure the "Build Connect" header text and the Trust Score badges render fully without truncation.
+
+### 4. Admin Dashboard Cream/Slate Theme Integration
+* **File:** [admin/layout.tsx](file:///k:/buildconnect/frontend/app/admin/layout.tsx)
+* **Adjustment:** Swapped dark-theme colors (`bg-slate-950`, `text-slate-100`) for the premium cream and slate theme (`bg-brand-cream`, `text-brand-slate`) and matched the sidebar branding styling with the other roles.
+* **File:** [admin/dashboard/page.tsx](file:///k:/buildconnect/frontend/app/admin/dashboard/page.tsx)
+* **Adjustment:** Adapted tab borders and active text color to use the brand orange (`border-brand-orange text-brand-orange`). Wrapped component in a `<Suspense>` block and implemented search parameters parsing (`?tab=...`) to switch tabs dynamically. Replaced count values with high-contrast text colors.
+
+### 5. Interactive Responsive Metric Cards
+* **Files:** [builder/dashboard/page.tsx](file:///k:/buildconnect/frontend/app/builder/dashboard/page.tsx), [contractor/dashboard/page.tsx](file:///k:/buildconnect/frontend/app/contractor/dashboard/page.tsx), [admin/dashboard/page.tsx](file:///k:/buildconnect/frontend/app/admin/dashboard/page.tsx)
+* **Adjustment:** Fluidly aligned metric card layouts using `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4` (and `xl:grid-cols-5` for admin overview). Wrapped each KPI card in a Next.js `<Link>` element targeting its dedicated dashboard sub-route (or tab url) with hover animations (`cursor-pointer hover:scale-[1.01] transition-all`).
+
+### 6. Localized Onboarding Wizard Confirmation States
+* **File:** [contractor/profile/page.tsx](file:///k:/buildconnect/frontend/app/contractor/profile/page.tsx)
+* **Adjustment:** Removed global top-of-screen alert banners. Introduced separate inline state variables (`businessSuccess/Error`, `specialtiesSuccess/Error`, `verificationSuccess/Error`) rendered cleanly beside their respective action buttons.
+
+### 7. Read-Only Approved Profile States & Warning Flags
+* **File:** [contractor/profile/page.tsx](file:///k:/buildconnect/frontend/app/contractor/profile/page.tsx)
+* **Adjustment:** If the contractor's profile is already verified and approved, it renders active details as read-only labels and list badges. An "Edit Profile" action button toggles form inputs and displays a warning: `"Editing your details will tag modifications as Pending Admin Approval without displacing existing verified details."`
+
+### 8. Identity & Trade Certification Upload Summary Card
+* **File:** [contractorRepository.ts](file:///k:/buildconnect/backend/repositories/contractorRepository.ts)
+* **Adjustment:** Modified backend queries in `getProfile` to join and return the contractor's uploaded verification documents.
+* **File:** [contractor/profile/page.tsx](file:///k:/buildconnect/frontend/app/contractor/profile/page.tsx)
+* **Adjustment:** Prefills state with documents. If documents exist, displays a "Verification Summary" Info Card displaying: Masked Aadhaar (`XXXX-XXXX-1234`), Masked PAN (`ABCXXXXX99`), unmasked Trade License ID, and Verification Status. The upload drop boxes are replaced by small row element cards with a direct "View" document action. An "Update Verification Documents" button is provided to toggle back to the upload forms.

@@ -32,10 +32,23 @@ export class ContractorRepository {
       [contractorId]
     );
 
+    // Fetch documents
+    const docsRes = await query(
+      `SELECT file_name, file_url, file_type 
+       FROM documents 
+       WHERE entity_type = 'contractor' AND entity_id = $1`,
+      [contractorId]
+    );
+
     return {
       ...contractor,
       skills: skillsRes.rows,
-      categories: categoriesRes.rows
+      categories: categoriesRes.rows,
+      documents: docsRes.rows.map(d => ({
+        name: d.file_name,
+        url: d.file_url,
+        type: d.file_type
+      }))
     };
   }
 

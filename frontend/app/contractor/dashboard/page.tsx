@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axiosInstance from '@/services/api/axiosInstance';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -146,81 +147,89 @@ const ContractorDashboard = () => {
       )}
 
       {/* METRIC CARDS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Bids Sent</CardDescription>
-            <span className="text-purple-400 bg-purple-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-extrabold text-white">{data?.totalApplications}</span>
-            <div className="text-[11px] text-slate-500 mt-1.5">{data?.totalWon} bids accepted by builders</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/contractor/applications" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Bids Sent</CardDescription>
+              <span className="text-purple-400 bg-purple-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent>
+              <span className="text-3xl font-extrabold text-white">{data?.totalApplications}</span>
+              <div className="text-[11px] text-slate-500 mt-1.5">{data?.totalWon} bids accepted by builders</div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Bidding Success Rate</CardDescription>
-            <span className="text-emerald-400 bg-emerald-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-extrabold text-white">
-              {data ? Math.round(data.successRate) : 0}%
-            </span>
-            <div className="text-[11px] text-slate-500 mt-1.5">ratio of bids won to bids submitted</div>
-          </CardContent>
-        </Card>
+        <Link href="/contractor/applications" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Bidding Success Rate</CardDescription>
+              <span className="text-emerald-400 bg-emerald-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent>
+              <span className="text-3xl font-extrabold text-white">
+                {data ? Math.round(data.successRate) : 0}%
+              </span>
+              <div className="text-[11px] text-slate-500 mt-1.5">ratio of bids won to bids submitted</div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Awarded Projects</CardDescription>
-            <span className="text-sky-400 bg-sky-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-extrabold text-white">{data?.activeProjects}</span>
-            <div className="text-[11px] text-slate-500 mt-1.5">{data?.completedProjects} completed projects logged</div>
-          </CardContent>
-        </Card>
+        <Link href="/contractor/projects" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Awarded Projects</CardDescription>
+              <span className="text-sky-400 bg-sky-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent>
+              <span className="text-3xl font-extrabold text-white">{data?.activeProjects}</span>
+              <div className="text-[11px] text-slate-500 mt-1.5">{data?.completedProjects} completed projects logged</div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Trust Metrics</CardDescription>
-            <span className="text-amber-400 bg-amber-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">{data ? Math.round(data.trustScore) : 0}%</span>
-              <span className="text-xs text-slate-500 font-semibold">(AI: {data ? Math.round(data.aiProfileScore) : 0}%)</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[10px] text-slate-500">Status:</span>
-              <Badge variant={data ? verifBadgeVariant[data.verificationStatus] : 'neutral'} size="sm" className="capitalize">
-                {data?.verificationStatus}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/contractor/profile" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Trust Metrics</CardDescription>
+              <span className="text-amber-400 bg-amber-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent className="overflow-visible h-auto">
+              <div className="flex items-baseline gap-2 overflow-visible h-auto">
+                <span className="text-3xl font-extrabold text-brand-slate">{data ? Math.round(data.trustScore) : 0}%</span>
+                <span className="text-xs text-brand-slate-light font-semibold">(AI: {data ? Math.round(data.aiProfileScore) : 0}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1.5 overflow-visible h-auto">
+                <span className="text-[10px] text-slate-500">Status:</span>
+                <Badge variant={data ? verifBadgeVariant[data.verificationStatus] : 'neutral'} size="sm" className="capitalize overflow-visible h-auto max-h-none">
+                  {data?.verificationStatus}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* CHARTS & DIAGNOSTICS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-        <Card className="md:col-span-2">
+      <div className="mt-4">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Bidding Status Distribution</CardTitle>
             <CardDescription>Visual segment analysis of submitted bids by approval states</CardDescription>
@@ -231,27 +240,6 @@ const ContractorDashboard = () => {
             ) : (
               <span className="text-slate-500 text-xs italic py-12 block text-center w-full">No bids submitted yet to chart.</span>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>System Diagnostic Status</CardTitle>
-            <CardDescription>Platform components check</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-xs">
-            <div className="flex justify-between items-center py-2 border-b border-slate-800/40">
-              <span className="text-slate-400">Supabase Database</span>
-              <span className="text-emerald-400 font-semibold">Active</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-800/40">
-              <span className="text-slate-400">Supabase Document Storage</span>
-              <span className="text-emerald-400 font-semibold">Configured</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-slate-400">AI Compatibility Matcher</span>
-              <span className="text-amber-400 font-semibold">Rule-Based Mock</span>
-            </div>
           </CardContent>
         </Card>
       </div>

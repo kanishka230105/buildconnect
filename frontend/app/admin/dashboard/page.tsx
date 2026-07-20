@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import axiosInstance from '@/services/api/axiosInstance';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -77,9 +79,24 @@ interface PlatformStats {
   packages: { [key: string]: number };
 }
 
-const AdminDashboard = () => {
+const AdminDashboardContent = () => {
+  const searchParams = useSearchParams();
   // Tabs State
   const [activeTab, setActiveTab] = useState<'overview' | 'verifications' | 'projects' | 'users' | 'reviews'>('overview');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'builder' | 'contractor'>('all');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['overview', 'verifications', 'projects', 'users', 'reviews'].includes(tab)) {
+      setActiveTab(tab as any);
+    }
+    const role = searchParams.get('role');
+    if (role && ['builder', 'contractor'].includes(role)) {
+      setRoleFilter(role as any);
+    } else {
+      setRoleFilter('all');
+    }
+  }, [searchParams]);
 
   // Diagnostics & Verifications Data States
   const [pendingReviews, setPendingReviews] = useState<PendingVerificationItem[]>([]);
@@ -289,7 +306,7 @@ const AdminDashboard = () => {
       )}
 
       {/* ADMIN TABS NAVIGATION */}
-      <div className="flex border-b border-slate-800/80 gap-6">
+      <div className="flex border-b border-brand-slate-pale gap-6">
         {[
           { id: 'overview', label: 'Platform Diagnostics' },
           { id: 'verifications', label: `Pending Reviews (${pendingReviews.length})` },
@@ -302,8 +319,8 @@ const AdminDashboard = () => {
             onClick={() => setActiveTab(tab.id as any)}
             className={`pb-3 text-sm font-semibold tracking-wide transition-all border-b-2 ${
               activeTab === tab.id
-                ? 'border-indigo-500 text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-brand-orange text-brand-orange'
+                : 'border-transparent text-slate-400 hover:text-slate-650'
             }`}
           >
             {tab.label}
@@ -315,21 +332,21 @@ const AdminDashboard = () => {
       {activeTab === 'overview' && (
         <div className="flex flex-col gap-8">
           {/* Counters */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Builders', value: stats?.totals.builders, desc: 'registered companies', color: 'text-purple-400' },
-              { label: 'Contractors', value: stats?.totals.contractors, desc: 'active tradesmen', color: 'text-indigo-400' },
-              { label: 'Projects', value: stats?.totals.projects, desc: 'published projects', color: 'text-sky-400' },
-              { label: 'Packages', value: stats?.totals.packages, desc: 'awarded work units', color: 'text-emerald-400' },
-              { label: 'Quotations', value: stats?.totals.quotations, desc: 'quotation bids filed', color: 'text-amber-400' }
+              { label: 'Builders', value: stats?.totals.builders, desc: 'registered companies', color: 'text-brand-orange', tab: 'users', role: 'builder' },
+              { label: 'Contractors', value: stats?.totals.contractors, desc: 'active tradesmen', color: 'text-brand-slate', tab: 'users', role: 'contractor' },
+              { label: 'Projects', value: stats?.totals.projects, desc: 'published projects', color: 'text-brand-orange', tab: 'projects', role: null }
             ].map((counter, idx) => (
-              <Card key={idx}>
-                <CardContent className="pt-5 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">{counter.label}</span>
-                  <span className={`text-3xl font-black ${counter.color} block mt-1`}>{counter.value}</span>
-                  <span className="text-[10px] text-slate-500 block mt-1.5">{counter.desc}</span>
-                </CardContent>
-              </Card>
+              <Link key={idx} href={`/admin/dashboard?tab=${counter.tab}${counter.role ? `&role=${counter.role}` : ''}`} className="block cursor-pointer hover:scale-[1.01] transition-all">
+                <Card>
+                  <CardContent className="pt-5 flex flex-col justify-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">{counter.label}</span>
+                    <span className={`text-3xl font-black ${counter.color} block mt-1`}>{counter.value}</span>
+                    <span className="text-[10px] text-slate-500 block mt-1.5">{counter.desc}</span>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
 
@@ -455,7 +472,7 @@ const AdminDashboard = () => {
                         </div>
                         <div>
                           <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Builder Trust</span>
-                          <p className="text-slate-200 text-sm font-semibold">{project.builder_trust_score ?? 'N/A'}</p>
+                          <p className="text-slate-200 text-sm font-semibold">{project.builder_trust_score !== null ? `${Math.round(Number(project.builder_trust_score))}%` : 'N/A'}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -506,69 +523,120 @@ const AdminDashboard = () => {
       )}
 
       {/* TAB CONTENTS: 3. platform users listing */}
-      {activeTab === 'users' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Registered Platform Users</CardTitle>
-            <CardDescription>Monitor credentials, suspension states, and registration dates</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {usersList.length === 0 ? (
-              <span className="text-slate-500 text-xs italic py-8 block text-center w-full">No users registered on the platform.</span>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Trade / Company Name</TableHead>
-                    <TableHead>Email Address</TableHead>
-                    <TableHead>System Role</TableHead>
-                    <TableHead>Verification Status</TableHead>
-                    <TableHead>Account Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {usersList.map((usr) => (
-                    <TableRow key={usr.id}>
-                      <TableCell className="font-bold text-white truncate max-w-[150px]">{usr.name}</TableCell>
-                      <TableCell className="text-slate-400">{usr.email}</TableCell>
-                      <TableCell className="capitalize text-slate-300 font-semibold text-xs">{usr.role}</TableCell>
-                      <TableCell>
-                        {usr.role !== 'admin' ? (
-                          <Badge variant={verifBadgeVariant[usr.verification_status]} size="sm" className="capitalize">
-                            {usr.verification_status}
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {usr.is_suspended ? (
-                          <Badge variant="danger" size="sm">Suspended</Badge>
-                        ) : (
-                          <Badge variant="success" size="sm">Active</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {usr.role !== 'admin' && (
-                          <Button
-                            onClick={() => handleToggleSuspension(usr)}
-                            variant={usr.is_suspended ? 'primary' : 'danger'}
-                            size="sm"
-                            disabled={submittingAction}
-                          >
-                            {usr.is_suspended ? 'Activate' : 'Suspend'}
-                          </Button>
-                        )}
-                      </TableCell>
+      {activeTab === 'users' && (() => {
+        const filteredUsers = usersList.filter((usr) => {
+          if (roleFilter === 'all') return true;
+          return usr.role === roleFilter;
+        });
+        return (
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle>Platform Users</CardTitle>
+                <CardDescription>Monitor credentials, suspension states, and registration dates</CardDescription>
+              </div>
+              <div className="flex gap-1.5 bg-slate-950/60 p-1.5 rounded-xl border border-slate-900 self-start sm:self-center">
+                {(['all', 'builder', 'contractor'] as const).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRoleFilter(r)}
+                    className={`text-[11px] px-3.5 py-1.5 rounded-lg font-bold capitalize transition-all ${
+                      roleFilter === r
+                        ? 'bg-brand-orange text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {r === 'all' ? 'All Roles' : `${r}s`}
+                  </button>
+                ))}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredUsers.length === 0 ? (
+                <span className="text-slate-500 text-xs italic py-8 block text-center w-full">No {roleFilter !== 'all' ? `${roleFilter}s` : 'users'} registered on the platform.</span>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Trade / Company Name</TableHead>
+                      <TableHead>Email Address</TableHead>
+                      <TableHead>System Role</TableHead>
+                      <TableHead>Verification Status</TableHead>
+                      <TableHead>Account Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((usr) => (
+                      <TableRow key={usr.id}>
+                        <TableCell className="font-bold text-white truncate max-w-[150px]">{usr.name}</TableCell>
+                        <TableCell className="text-slate-400">{usr.email}</TableCell>
+                        <TableCell className="capitalize text-slate-300 font-semibold text-xs">{usr.role}</TableCell>
+                        <TableCell>
+                          {usr.role !== 'admin' ? (
+                            <Badge variant={verifBadgeVariant[usr.verification_status]} size="sm" className="capitalize">
+                              {usr.verification_status}
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {usr.is_suspended ? (
+                            <Badge variant="danger" size="sm">Suspended</Badge>
+                          ) : (
+                            <Badge variant="success" size="sm">Active</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {usr.role === 'contractor' && (usr as any).contractor_preferences?.edit_request_status === 'pending' && (
+                              <Button
+                                onClick={async () => {
+                                  if (!window.confirm(`Approve edit request for contractor: ${usr.name}?`)) return;
+                                  try {
+                                    setSubmittingAction(true);
+                                    const res = await axiosInstance.post(`/admin/users/${usr.id}/approve-edit`) as any;
+                                    if (res.success) {
+                                      alert('Edit request approved successfully.');
+                                      // Trigger reload of users
+                                      const usersRes = await axiosInstance.get('/admin/users') as any;
+                                      if (usersRes.success) setUsersList(usersRes.data);
+                                    }
+                                  } catch (err: any) {
+                                    alert(err?.message || 'Failed to approve edit request.');
+                                  } finally {
+                                    setSubmittingAction(false);
+                                  }
+                                }}
+                                variant="primary"
+                                size="sm"
+                                disabled={submittingAction}
+                              >
+                                Approve Edit
+                              </Button>
+                            )}
+                            {usr.role !== 'admin' && (
+                              <Button
+                                onClick={() => handleToggleSuspension(usr)}
+                                variant={usr.is_suspended ? 'primary' : 'danger'}
+                                size="sm"
+                                disabled={submittingAction}
+                              >
+                                {usr.is_suspended ? 'Activate' : 'Suspend'}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* TAB CONTENTS: 4. moderate posted reviews */}
       {activeTab === 'reviews' && (
@@ -696,6 +764,21 @@ const AdminDashboard = () => {
         </Modal>
       )}
     </div>
+  );
+};
+
+const AdminDashboard = () => {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center">
+        <svg className="animate-spin h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+      </div>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
   );
 };
 

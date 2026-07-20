@@ -146,7 +146,7 @@ const BuilderLayout = ({ children }: { children: React.ReactNode }) => {
             <div className="w-[26px] h-[26px] bg-brand-orange rounded-md flex items-center justify-center text-white font-syne font-extrabold text-sm">
               B
             </div>
-            <span className="font-syne font-extrabold text-lg text-white tracking-tight">
+            <span className="font-syne font-extrabold text-lg text-white tracking-tight leading-normal">
               Build<span className="text-brand-orange-light">Connect</span>
             </span>
           </div>
@@ -157,9 +157,9 @@ const BuilderLayout = ({ children }: { children: React.ReactNode }) => {
             <span className="text-sm font-semibold truncate text-slate-100">
               {profileData?.company_name || 'My Company'}
             </span>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 overflow-visible h-auto">
               <span className="text-[11px] text-slate-400 font-medium">Trust Score:</span>
-              <Badge variant="primary" size="sm">
+              <Badge variant="primary" size="sm" className="trust-badge-builder overflow-visible h-auto max-h-none">
                 {profileData?.trust_score ? `${Math.round(profileData.trust_score)}%` : '0%'}
               </Badge>
             </div>

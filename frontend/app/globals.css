@@ -1,16 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #FAFAF8; /* Cream background */
-  --foreground: #1C2B3A; /* Slate main text */
+  --background: #FAFAF8;
+  /* Cream background */
+  --foreground: #1C2B3A;
+  /* Slate main text */
   --card: #FFFFFF;
   --border: #DDE4EC;
-  
+
   --brand-orange: #E85D20;
   --brand-orange-light: #FF7A3C;
   --brand-orange-pale: #FFF0E8;
   --brand-orange-dark: #B84010;
-  
+
   --brand-slate: #1C2B3A;
   --brand-slate-medium: #2E4057;
   --brand-slate-light: #4A6080;
@@ -20,63 +23,82 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  
+
   --color-brand-orange: var(--brand-orange);
   --color-brand-orange-light: var(--brand-orange-light);
   --color-brand-orange-pale: var(--brand-orange-pale);
   --color-brand-orange-dark: var(--brand-orange-dark);
-  
+
   --color-brand-slate: var(--brand-slate);
   --color-brand-slate-medium: var(--brand-slate-medium);
   --color-brand-slate-light: var(--brand-slate-light);
   --color-brand-slate-pale: var(--brand-slate-pale);
-  
+
   --color-card: var(--card);
   --color-border: var(--border);
-  
-  --font-sans: var(--font-dm-sans), sans-serif;
-  --font-syne: var(--font-syne), sans-serif;
+
+  --font-sans: 'DM Sans', sans-serif;
+  --font-syne: 'Syne', sans-serif;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-dm-sans), sans-serif;
+  font-family: 'DM Sans', sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-syne), sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Syne', sans-serif;
 }
 
 /* Dashboard & Panel overrides for light-theme compatibility */
 
-.bg-brand-cream h1, 
-.bg-brand-cream h2, 
-.bg-brand-cream h3, 
-.bg-brand-cream h4, 
-.bg-brand-cream h5, 
+.bg-brand-cream h1,
+.bg-brand-cream h2,
+.bg-brand-cream h3,
+.bg-brand-cream h4,
+.bg-brand-cream h5,
 .bg-brand-cream h6,
 .bg-brand-cream .text-white {
   color: #1C2B3A !important;
 }
 
-.bg-brand-cream p, 
-.bg-brand-cream .text-slate-400, 
+.bg-brand-cream p,
+.bg-brand-cream .text-slate-400,
 .bg-brand-cream .text-slate-500,
 .bg-brand-cream .text-slate-300 {
   color: #4A6080 !important;
 }
 
-.bg-brand-cream .text-slate-100 {
+.bg-brand-cream .text-slate-100,
+.bg-brand-cream .text-slate-200 {
   color: #1C2B3A !important;
 }
 
+/* Ensure buttons and elements with solid colored backgrounds inside .bg-brand-cream keep white text */
+.bg-brand-cream button.bg-brand-orange,
+.bg-brand-cream button.bg-brand-slate,
+.bg-brand-cream button.bg-red-600,
+.bg-brand-cream .bg-brand-orange,
+.bg-brand-cream .bg-brand-slate,
+.bg-brand-cream .bg-red-600,
+.bg-brand-cream .bg-brand-orange *,
+.bg-brand-cream .bg-brand-slate *,
+.bg-brand-cream .bg-red-600 * {
+  color: #FFFFFF !important;
+}
+
 /* Overriding background cards to premium white cards with proper borders */
-.bg-brand-cream .bg-slate-900, 
+.bg-brand-cream .bg-slate-900,
 .bg-brand-cream .bg-slate-900\/60,
 .bg-brand-cream .bg-slate-900\/40,
 .bg-brand-cream .bg-slate-950,
-.bg-brand-cream .bg-slate-950\/20, 
+.bg-brand-cream .bg-slate-950\/20,
 .bg-brand-cream .bg-slate-950\/40,
 .bg-brand-cream .bg-slate-950\/60,
 .bg-brand-cream .bg-slate-950\/80 {
@@ -86,7 +108,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Table overrides */
-.bg-brand-cream td, 
+.bg-brand-cream td,
 .bg-brand-cream th,
 .bg-brand-cream table {
   color: #1C2B3A !important;
@@ -128,4 +150,16 @@ aside.bg-brand-slate button.bg-brand-orange:hover {
 aside.bg-brand-slate .bg-brand-slate-medium\/40 {
   background-color: #2E4057 !important;
   border-color: #4A6080 !important;
+}
+
+aside.bg-brand-slate .trust-badge-builder {
+  color: #E85D20 !important;
+  background-color: #FFF0E8 !important;
+  border-color: rgba(232, 93, 32, 0.2) !important;
+}
+
+aside.bg-brand-slate .trust-badge-contractor {
+  color: #10B981 !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
 }

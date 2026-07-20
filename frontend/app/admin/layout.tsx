@@ -39,25 +39,23 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <div className="flex-1 flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex-1 flex min-h-screen bg-brand-cream text-brand-slate">
       {/* SIDEBAR */}
-      <aside className="w-64 border-r border-slate-800 bg-slate-900/40 backdrop-blur-md flex flex-col justify-between">
+      <aside className="w-64 border-r border-brand-slate bg-brand-slate flex flex-col justify-between">
         <div className="flex flex-col">
           {/* Brand header */}
-          <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+          <div className="p-6 border-b border-brand-slate-medium flex items-center gap-3">
+            <div className="w-[26px] h-[26px] bg-brand-orange rounded-md flex items-center justify-center text-white font-syne font-extrabold text-sm">
+              B
             </div>
-            <span className="font-bold text-lg bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-              BuildConnect
+            <span className="font-syne font-extrabold text-lg text-white tracking-tight leading-normal">
+              Build<span className="text-brand-orange-light">Connect</span>
             </span>
           </div>
 
-          <div className="p-4 mx-4 my-6 bg-slate-900/60 border border-slate-800 rounded-2xl flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Admin Portal</span>
-            <span className="text-xs text-slate-300 font-semibold truncate">
+          <div className="p-4 mx-4 my-6 bg-brand-slate-medium/40 border border-brand-slate-light/10 rounded-2xl flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Admin Portal</span>
+            <span className="text-sm font-semibold truncate text-slate-100">
               {user.email}
             </span>
           </div>
@@ -68,11 +66,11 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               onClick={() => router.push('/admin/dashboard')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                 pathname === '/admin/dashboard'
-                  ? 'bg-indigo-600/10 border border-indigo-500/30 text-indigo-300'
-                  : 'border border-transparent text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
+                  ? 'bg-brand-orange text-white shadow-md shadow-brand-orange/20'
+                  : 'border border-transparent text-slate-400 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg className={`w-5 h-5 ${pathname === '/admin/dashboard' ? 'text-white' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
               Verification Reviews
@@ -81,10 +79,10 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         {/* Sign out */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-brand-slate-medium">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-rose-950/20 hover:text-rose-400 border border-transparent hover:border-rose-900/30 transition-all duration-250"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-950/20 hover:text-red-400 border border-transparent hover:border-red-900/30 transition-all duration-250"
           >
             <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -95,7 +93,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       </aside>
 
       {/* Main layout frame */}
-      <main className="flex-1 flex flex-col overflow-y-auto bg-slate-950 p-8">
+      <main className="flex-1 flex flex-col overflow-y-auto bg-brand-cream p-8">
         {children}
       </main>
     </div>

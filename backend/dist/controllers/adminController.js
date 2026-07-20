@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const adminRepository_1 = require("../repositories/adminRepository");
+const projectRepository_1 = require("../repositories/projectRepository");
 const apiResponse_1 = require("../utils/apiResponse");
 const adminValidator_1 = require("../validators/adminValidator");
 class AdminController {
@@ -41,10 +42,20 @@ class AdminController {
             next(error);
         }
     }
-    // Get all builder projects awaiting admin approval
+    // Get all posted reviews list
+    static async getReviewsList(_req, res, next) {
+        try {
+            const reviews = await adminRepository_1.AdminRepository.getAllReviews();
+            res.status(200).json((0, apiResponse_1.createApiResponse)(true, 'Reviews retrieved successfully.', reviews));
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    // Get pending project approvals
     static async getPendingProjects(_req, res, next) {
         try {
-            const pendingProjects = await adminRepository_1.AdminRepository.getPendingProjectApprovals();
+            const pendingProjects = await projectRepository_1.ProjectRepository.getPendingApprovalProjects();
             res.status(200).json((0, apiResponse_1.createApiResponse)(true, 'Pending projects retrieved successfully.', pendingProjects));
         }
         catch (error) {
@@ -52,26 +63,17 @@ class AdminController {
         }
     }
     // Approve or reject a project submission
-    static async reviewProject(req, res, next) {
+    static async reviewProjectApproval(req, res, next) {
         try {
             const projectId = req.params.id;
-            const validatedData = adminValidator_1.reviewProjectSchema.parse(req.body);
-            const { action, remarks } = validatedData;
-            const result = await adminRepository_1.AdminRepository.reviewProject(projectId, action, remarks);
-            const message = action === 'approve'
-                ? 'Project has been approved and published successfully.'
-                : 'Project has been rejected and reverted to draft state.';
-            res.status(200).json((0, apiResponse_1.createApiResponse)(true, message, result));
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    // Get all posted reviews list
-    static async getReviewsList(_req, res, next) {
-        try {
-            const reviews = await adminRepository_1.AdminRepository.getAllReviews();
-            res.status(200).json((0, apiResponse_1.createApiResponse)(true, 'Reviews retrieved successfully.', reviews));
+            const { action } = req.body;
+            if (!action || !['approve', 'reject'].includes(action)) {
+                res.status(400).json((0, apiResponse_1.createApiResponse)(false, "Action must be either 'approve' or 'reject'."));
+                return;
+            }
+            const targetStatus = action === 'approve' ? 'published' : 'draft';
+            const updatedProject = await projectRepository_1.ProjectRepository.updateProjectStatus(projectId, targetStatus);
+            res.status(200).json((0, apiResponse_1.createApiResponse)(true, `Project has been ${action === 'approve' ? 'approved and published' : 'rejected and returned to draft'}.`, updatedProject));
         }
         catch (error) {
             next(error);
@@ -108,6 +110,17 @@ class AdminController {
             const packageId = req.params.id;
             const result = await adminRepository_1.AdminRepository.cancelPackage(packageId);
             res.status(200).json((0, apiResponse_1.createApiResponse)(true, 'Work package has been cancelled by administrator.', result));
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    // Approve contractor edit request
+    static async approveEditRequest(req, res, next) {
+        try {
+            const contractorId = req.params.id;
+            const result = await adminRepository_1.AdminRepository.approveContractorEdit(contractorId);
+            res.status(200).json((0, apiResponse_1.createApiResponse)(true, 'Contractor edit request has been approved.', result));
         }
         catch (error) {
             next(error);

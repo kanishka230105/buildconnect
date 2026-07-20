@@ -120,29 +120,20 @@ class DiscoveryRepository {
        LEFT JOIN package_skills ps ON pp.id = ps.package_id
        LEFT JOIN skills s ON ps.skill_id = s.id
        WHERE pp.id = $1
-         AND p.status = 'published'
        GROUP BY pp.id, p.id, b.id`, [packageId]);
         return result.rows[0] || null;
     }
     // Submit quotation bid for a package
     static async submitQuotation(contractorId, packageId, bid) {
-        // 1. Verify that the package exists and is currently OPEN, and that its parent project is published
-        const packageRes = await (0, db_1.query)(`SELECT pp.status AS package_status, p.status AS project_status
-       FROM project_packages pp
-       JOIN projects p ON pp.project_id = p.id
-       WHERE pp.id = $1 LIMIT 1`, [packageId]);
+        // 1. Verify that the package exists and is currently OPEN
+        const packageRes = await (0, db_1.query)('SELECT status FROM project_packages WHERE id = $1 LIMIT 1', [packageId]);
         const pkg = packageRes.rows[0];
         if (!pkg) {
             const err = new Error('Project package not found.');
             err.statusCode = 404;
             throw err;
         }
-        if (pkg.project_status !== 'published') {
-            const err = new Error('Bidding is not available until the project is approved and published.');
-            err.statusCode = 400;
-            throw err;
-        }
-        if (pkg.package_status !== 'open') {
+        if (pkg.status !== 'open') {
             const err = new Error('Bidding is closed for this project package.');
             err.statusCode = 400;
             throw err;

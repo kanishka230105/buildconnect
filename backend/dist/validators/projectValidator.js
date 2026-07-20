@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProjectStatusSchema = exports.updateProjectSchema = exports.createProjectSchema = exports.packageCreationSchema = void 0;
+exports.updateProjectStatusSchema = exports.updateProjectSchema = exports.createProjectSchema = exports.projectImageSchema = exports.packageCreationSchema = void 0;
 const zod_1 = require("zod");
 const WORK_PACKAGE_SERVICES = {
     'Site Preparation & Clearing': ['Site Clearing', 'Vegetation Removal', 'Debris Removal', 'Existing Structure Removal', 'Site Levelling', 'Topsoil Removal', 'Temporary Access Preparation', 'Construction Site Setup'],
@@ -33,18 +33,20 @@ exports.packageCreationSchema = zod_1.z.object({
     scope: zod_1.z.string().trim().min(5, 'Package scope statement is required.'),
     required_experience: zod_1.z.string().trim().optional(),
     skills: zod_1.z.array(zod_1.z.string().uuid('Skill ID must be a valid UUID.')).optional(),
-    selected_services: zod_1.z.array(zod_1.z.string().trim().min(1)).optional()
+    selected_services: zod_1.z.array(zod_1.z.string().trim().min(1)).optional(),
+    custom_services: zod_1.z.string().trim().optional()
 }).superRefine((data, ctx) => {
     const allowedServices = WORK_PACKAGE_SERVICES[data.name];
     if (!allowedServices) {
         return;
     }
     const selectedServices = data.selected_services || [];
-    if (selectedServices.length === 0) {
+    const hasCustomServices = Boolean(data.custom_services?.trim());
+    if (selectedServices.length === 0 && !hasCustomServices) {
         ctx.addIssue({
             code: zod_1.z.ZodIssueCode.custom,
             path: ['selected_services'],
-            message: 'At least one service must be selected for the chosen package.'
+            message: 'Please select at least one package service or provide custom services.'
         });
         return;
     }
@@ -57,6 +59,13 @@ exports.packageCreationSchema = zod_1.z.object({
         });
     }
 });
+exports.projectImageSchema = zod_1.z.object({
+    name: zod_1.z.string().trim().min(1, 'Image file name is required.'),
+    fileType: zod_1.z.string().trim().min(1, 'Image file type is required.'),
+    fileData: zod_1.z.string().trim().min(1, 'Base64 image data is required.').refine((val) => {
+        return /^data:[^;]+;base64,/.test(val) || /^[A-Za-z0-9+/=]+$/.test(val);
+    }, { message: 'Invalid base64 image data.' })
+});
 exports.createProjectSchema = zod_1.z.object({
     name: zod_1.z.string().trim().min(3, 'Project name must be at least 3 characters.'),
     description: zod_1.z.string().trim().min(10, 'Project description must be at least 10 characters.'),
@@ -68,6 +77,7 @@ exports.createProjectSchema = zod_1.z.object({
     status: zod_1.z.enum(['draft', 'pending_approval', 'published', 'archived'], {
         errorMap: () => ({ message: "Status must be 'draft', 'pending_approval', 'published', or 'archived'." })
     }),
+    site_images: zod_1.z.array(exports.projectImageSchema).optional(),
     packages: zod_1.z.array(exports.packageCreationSchema).min(1, 'A project must have at least one work package.')
 });
 exports.updateProjectSchema = zod_1.z.object({

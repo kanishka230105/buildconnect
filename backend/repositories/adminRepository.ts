@@ -119,7 +119,8 @@ export class AdminRepository {
     const sql = `
       SELECT u.id, u.email, u.role, u.is_suspended, u.created_at,
              COALESCE(b.company_name, c.business_name, 'Platform User') as name,
-             COALESCE(b.verification_status, c.verification_status, 'approved') as verification_status
+             COALESCE(b.verification_status, c.verification_status, 'approved') as verification_status,
+             c.preferences as contractor_preferences
       FROM users u
       LEFT JOIN builders b ON b.id = u.id
       LEFT JOIN contractors c ON c.id = u.id
@@ -238,6 +239,26 @@ export class AdminRepository {
       await query('ROLLBACK');
       throw error;
     }
+  }
+
+  // Approve contractor edit request (set preferences.edit_request_status = 'approved')
+  static async approveContractorEdit(contractorId: string): Promise<any> {
+    const contractorRes = await query('SELECT preferences FROM contractors WHERE id = $1 LIMIT 1', [contractorId]);
+    const contractor = contractorRes.rows[0];
+    if (!contractor) throw new Error('Contractor profile not found.');
+
+    const preferences = contractor.preferences || {};
+    preferences.edit_request_status = 'approved';
+
+    const result = await query(
+      `UPDATE contractors 
+       SET preferences = $1, 
+           updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING id, preferences`,
+      [JSON.stringify(preferences), contractorId]
+    );
+    return result.rows[0];
   }
 }
 export default AdminRepository;

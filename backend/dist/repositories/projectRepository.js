@@ -2,9 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectRepository = void 0;
 const db_1 = require("../config/db");
+const supabaseStorage_1 = require("../storage/supabaseStorage");
 class ProjectRepository {
     // Create Project and all packages atomically
-    static async createProject(builderId, project, packages) {
+    static async createProject(builderId, project, packages, siteImages) {
         await (0, db_1.query)('BEGIN');
         try {
             // 1. Insert Project
@@ -48,12 +49,28 @@ class ProjectRepository {
                 }
                 insertedPackages.push({ ...newPkg, skills: pkg.skills || [] });
             }
+            if (siteImages && siteImages.length > 0) {
+                await this.addProjectDocuments(newProject.id, siteImages);
+            }
             await (0, db_1.query)('COMMIT');
             return { ...newProject, packages: insertedPackages };
         }
         catch (error) {
             await (0, db_1.query)('ROLLBACK');
             throw error;
+        }
+    }
+    // Persist project images into storage and documents table
+    static async addProjectDocuments(projectId, siteImages) {
+        for (const image of siteImages) {
+            let base64String = image.fileData;
+            if (base64String.includes('base64,')) {
+                base64String = base64String.split('base64,')[1];
+            }
+            const buffer = Buffer.from(base64String, 'base64');
+            const url = await supabaseStorage_1.StorageService.uploadFile(buffer, image.name, 'project-images');
+            await (0, db_1.query)(`INSERT INTO documents (entity_type, entity_id, file_name, file_url, file_type)
+         VALUES ($1, $2, $3, $4, $5)`, ['project', projectId, image.name, url, image.fileType]);
         }
     }
     // Get Projects Posted by a Builder (along with package count)
@@ -66,6 +83,18 @@ class ProjectRepository {
        WHERE p.builder_id = $1
        GROUP BY p.id
        ORDER BY p.created_at DESC`, [builderId]);
+        return result.rows;
+    }
+    // Get projects waiting for admin approval
+    static async getPendingApprovalProjects() {
+        const result = await (0, db_1.query)(`SELECT p.*, b.company_name as builder_name, b.trust_score as builder_trust_score,
+              COUNT(pp.id) as package_count
+       FROM projects p
+       JOIN builders b ON p.builder_id = b.id
+       LEFT JOIN project_packages pp ON p.id = pp.project_id
+       WHERE p.status = 'pending_approval'
+       GROUP BY p.id, b.company_name, b.trust_score
+       ORDER BY p.created_at ASC`);
         return result.rows;
     }
     // Get Project Details along with Packages and their skills
@@ -88,6 +117,10 @@ class ProjectRepository {
        GROUP BY pp.id
        ORDER BY pp.created_at ASC`, [projectId]);
         project.packages = packagesRes.rows;
+        const docsRes = await (0, db_1.query)(`SELECT file_name, file_url, file_type
+       FROM documents
+       WHERE entity_type = 'project' AND entity_id = $1`, [projectId]);
+        project.documents = docsRes.rows;
         return project;
     }
     // Update Project Details

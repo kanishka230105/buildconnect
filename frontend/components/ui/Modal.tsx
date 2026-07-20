@@ -52,7 +52,7 @@ const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Container */}
       <div
-        className={`relative w-full ${sizeClasses[size]} flex flex-col rounded-2xl border border-slate-800/80 bg-slate-900 shadow-2xl animate-in scale-in duration-300`}
+        className={`relative w-full ${sizeClasses[size]} max-h-[calc(100vh-2rem)] overflow-y-auto flex flex-col rounded-2xl border border-slate-800/80 bg-slate-900 shadow-2xl animate-in scale-in duration-300`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800/60 p-5">

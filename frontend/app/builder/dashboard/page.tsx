@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axiosInstance from '@/services/api/axiosInstance';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -163,80 +164,88 @@ const BuilderDashboard = () => {
       </Card>
 
       {/* METRIC CARD GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Projects</CardDescription>
-            <span className="text-purple-400 bg-purple-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-extrabold text-white">{data?.totalProjects}</span>
-            <div className="text-[11px] text-slate-500 mt-1.5">{data?.draftProjects} drafts saved</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/builder/projects" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Projects</CardDescription>
+              <span className="text-purple-400 bg-purple-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent>
+              <span className="text-3xl font-extrabold text-white">{data?.totalProjects}</span>
+              <div className="text-[11px] text-slate-500 mt-1.5">{data?.draftProjects} drafts saved</div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Bidding</CardDescription>
-            <span className="text-emerald-400 bg-emerald-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-extrabold text-white">{data?.activeProjects}</span>
-            <div className="text-[11px] text-slate-500 mt-1.5">published projects open for bids</div>
-          </CardContent>
-        </Card>
+        <Link href="/builder/projects" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Bidding</CardDescription>
+              <span className="text-emerald-400 bg-emerald-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent>
+              <span className="text-3xl font-extrabold text-white">{data?.activeProjects}</span>
+              <div className="text-[11px] text-slate-500 mt-1.5">published projects open for bids</div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Pending Applications</CardDescription>
-            <span className="text-sky-400 bg-sky-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-extrabold text-white">{data?.pendingApplications}</span>
-            <div className="text-[11px] text-slate-500 mt-1.5">contractor bids awaiting review</div>
-          </CardContent>
-        </Card>
+        <Link href="/builder/applications" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Pending Applications</CardDescription>
+              <span className="text-sky-400 bg-sky-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent>
+              <span className="text-3xl font-extrabold text-white">{data?.pendingApplications}</span>
+              <div className="text-[11px] text-slate-500 mt-1.5">contractor bids awaiting review</div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card hoverEffect>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Trust Metrics</CardDescription>
-            <span className="text-amber-400 bg-amber-500/10 p-2 rounded-xl">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" />
-              </svg>
-            </span>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">{data ? Math.round(data.trustScore) : 0}%</span>
-              <span className="text-xs text-slate-500 font-semibold">(AI: {data ? Math.round(data.aiProfileScore) : 0}%)</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[10px] text-slate-500">Status:</span>
-              <Badge variant={data ? verifBadgeVariant[data.verificationStatus] : 'neutral'} size="sm" className="capitalize">
-                {data?.verificationStatus}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/builder/profile" className="block cursor-pointer hover:scale-[1.01] transition-all">
+          <Card hoverEffect>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Trust Metrics</CardDescription>
+              <span className="text-amber-400 bg-amber-500/10 p-2 rounded-xl">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4" />
+                </svg>
+              </span>
+            </CardHeader>
+            <CardContent className="overflow-visible h-auto">
+              <div className="flex items-baseline gap-2 overflow-visible h-auto">
+                <span className="text-3xl font-extrabold text-brand-slate">{data ? Math.round(data.trustScore) : 0}%</span>
+                <span className="text-xs text-brand-slate-light font-semibold">(AI: {data ? Math.round(data.aiProfileScore) : 0}%)</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1.5 overflow-visible h-auto">
+                <span className="text-[10px] text-slate-500">Status:</span>
+                <Badge variant={data ? verifBadgeVariant[data.verificationStatus] : 'neutral'} size="sm" className="capitalize overflow-visible h-auto max-h-none">
+                  {data?.verificationStatus}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* QUICK LINKS & CHARTS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-        <Card className="md:col-span-2">
+      <div className="mt-4">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Top Project Budgets (INR)</CardTitle>
             <CardDescription>Comparative horizontal bar chart showing your top 5 highest-budget projects</CardDescription>
@@ -247,31 +256,6 @@ const BuilderDashboard = () => {
             ) : (
               <span className="text-slate-500 text-xs italic py-12 block text-center w-full">No projects published yet to chart.</span>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick System Status</CardTitle>
-            <CardDescription>Platform integrity metrics</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-xs">
-            <div className="flex justify-between items-center py-2 border-b border-slate-800/40">
-              <span className="text-slate-400">SMTP Notification Dispatcher</span>
-              <span className="text-emerald-400 font-semibold">Online</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-800/40">
-              <span className="text-slate-400">Supabase Database</span>
-              <span className="text-emerald-400 font-semibold">Active</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-800/40">
-              <span className="text-slate-400">Supabase Document Storage</span>
-              <span className="text-emerald-400 font-semibold">Configured</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-slate-400">AI Compatibility Engine</span>
-              <span className="text-amber-400 font-semibold">Standalone Mock</span>
-            </div>
           </CardContent>
         </Card>
       </div>

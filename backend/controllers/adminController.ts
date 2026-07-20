@@ -127,5 +127,17 @@ export class AdminController {
       next(error);
     }
   }
+
+  // Approve contractor edit request
+  static async approveEditRequest(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const contractorId = req.params.id;
+      const result = await AdminRepository.approveContractorEdit(contractorId);
+
+      res.status(200).json(createApiResponse(true, 'Contractor edit request has been approved.', result));
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 export default AdminController;

@@ -14,12 +14,8 @@ class ProjectController {
                 return;
             }
             const validatedData = projectValidator_1.createProjectSchema.parse(req.body);
-            const { packages, ...projectDetails } = validatedData;
-            if (projectDetails.status === 'published') {
-                res.status(403).json((0, apiResponse_1.createApiResponse)(false, 'Builders cannot publish projects directly. Please submit for admin approval.'));
-                return;
-            }
-            const createdProject = await projectRepository_1.ProjectRepository.createProject(builderId, projectDetails, packages);
+            const { packages, site_images, ...projectDetails } = validatedData;
+            const createdProject = await projectRepository_1.ProjectRepository.createProject(builderId, projectDetails, packages, site_images);
             res.status(201).json((0, apiResponse_1.createApiResponse)(true, 'Project posted successfully.', createdProject));
         }
         catch (error) {
@@ -51,9 +47,9 @@ class ProjectController {
                 res.status(404).json((0, apiResponse_1.createApiResponse)(false, 'Project not found.'));
                 return;
             }
-            // Security Check: If project is in 'draft' or 'pending_approval' status, restrict access to the builder owner or admin only
+            // Security Check: If project is in 'draft' or 'pending_approval', restrict access to the builder owner or admins only
             if (['draft', 'pending_approval'].includes(project.status) && project.builder_id !== userId && req.user?.role !== 'admin') {
-                res.status(403).json((0, apiResponse_1.createApiResponse)(false, 'Access denied. This project is not yet published.'));
+                res.status(403).json((0, apiResponse_1.createApiResponse)(false, 'Access denied. Project visibility is restricted until it is published.'));
                 return;
             }
             res.status(200).json((0, apiResponse_1.createApiResponse)(true, 'Project details retrieved successfully.', project));
@@ -109,10 +105,7 @@ class ProjectController {
                 return;
             }
             const validatedData = projectValidator_1.updateProjectStatusSchema.parse(req.body);
-            if (validatedData.status === 'published') {
-                res.status(403).json((0, apiResponse_1.createApiResponse)(false, 'Builders cannot publish projects directly. Please submit for admin approval first.'));
-                return;
-            }
+            // Update status
             const updatedProject = await projectRepository_1.ProjectRepository.updateProjectStatus(projectId, validatedData.status);
             res.status(200).json((0, apiResponse_1.createApiResponse)(true, `Project status transitioned to ${validatedData.status} successfully.`, updatedProject));
         }

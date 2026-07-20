@@ -24,8 +24,21 @@ const ContractorProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Localized Success/Error Alert States
+  const [businessSuccess, setBusinessSuccess] = useState<string | null>(null);
+  const [businessError, setBusinessError] = useState<string | null>(null);
+
+  const [specialtiesSuccess, setSpecialtiesSuccess] = useState<string | null>(null);
+  const [specialtiesError, setSpecialtiesError] = useState<string | null>(null);
+
+  const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+
+  // Profile Edit and Overview states
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingVerification, setIsEditingVerification] = useState(false);
 
   // Master Lists
   const [masterSkills, setMasterSkills] = useState<ItemSelection[]>([]);
@@ -41,6 +54,10 @@ const ContractorProfilePage = () => {
   // Selected Checkboxes
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const isBusinessDetailsFilled = !!profile?.business_name;
+  const isSpecialtiesFilled = !!((profile?.categories && profile.categories.length > 0) || (profile?.skills && profile.skills.length > 0));
+  const editRequestStatus = profile?.preferences?.edit_request_status || 'none'; // 'none' | 'pending' | 'approved'
 
   // Verification Form
   const [panNo, setPanNo] = useState('');
@@ -83,6 +100,14 @@ const ContractorProfilePage = () => {
         setPanNo(p.pan_no || '');
         setAadhaarNo(p.aadhaar_no || '');
         setBusinessRegNo(p.business_reg_no || '');
+        setUploadedDocs(p.documents || []);
+
+        const hasDocs = p.documents && p.documents.length > 0;
+        setIsEditingVerification(!hasDocs);
+        
+        const isDetailsFilled = !!p.business_name;
+        const editReqStatus = p.preferences?.edit_request_status || 'none';
+        setIsEditingProfile(!isDetailsFilled || editReqStatus === 'approved');
       }
     } catch (err: any) {
       setErrorMsg(err?.message || 'Failed to retrieve contractor profiles.');
@@ -95,30 +120,63 @@ const ContractorProfilePage = () => {
     fetchData();
   }, []);
 
+  // Submit edit permission request to Admin
+  const handleRequestEdit = async () => {
+    setSaving(true);
+    setBusinessError(null);
+    setBusinessSuccess(null);
+    try {
+      const updatedPrefs = {
+        ...(profile?.preferences || {}),
+        edit_request_status: 'pending'
+      };
+      const res = (await axiosInstance.put('/contractors/profile', {
+        business_name: businessName,
+        website,
+        address,
+        preferences: updatedPrefs
+      })) as any;
+      if (res.success) {
+        setProfile(res.data);
+        setBusinessSuccess('Edit request submitted successfully to Admin.');
+      }
+    } catch (err: any) {
+      setBusinessError(err?.message || 'Failed to submit edit request.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Update profile details and preferences
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccessMsg(null);
-    setErrorMsg(null);
+    setBusinessSuccess(null);
+    setBusinessError(null);
     setSaving(true);
 
     try {
+      const updatedPrefs = {
+        ...(profile?.preferences || {}),
+        edit_request_status: 'none'
+      };
       const res = (await axiosInstance.put('/contractors/profile', {
         business_name: businessName,
         website,
         address,
         preferences: {
+          ...updatedPrefs,
           location: locationPref,
           budgetMax: budgetPrefMax ? parseFloat(budgetPrefMax) : undefined
         }
       })) as any;
 
       if (res.success) {
-        setSuccessMsg('Business details updated successfully!');
+        setBusinessSuccess('Business details updated successfully!');
         setProfile(res.data);
+        setIsEditingProfile(false);
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to update details.');
+      setBusinessError(err?.message || 'Failed to update details.');
     } finally {
       setSaving(false);
     }
@@ -126,8 +184,8 @@ const ContractorProfilePage = () => {
 
   // Synchronize Specialties (Skills & Categories Checkboxes)
   const handleSaveSpecialties = async () => {
-    setSuccessMsg(null);
-    setErrorMsg(null);
+    setSpecialtiesSuccess(null);
+    setSpecialtiesError(null);
     setSaving(true);
     try {
       // Sync skills
@@ -136,11 +194,28 @@ const ContractorProfilePage = () => {
       const catRes = (await axiosInstance.put('/contractors/categories', { categories: selectedCategories })) as any;
 
       if (skillRes.success && catRes.success) {
-        setSuccessMsg('Specialties synchronized successfully!');
-        setProfile(catRes.data);
+        // Reset edit request status to lock it again
+        const updatedPrefs = {
+          ...(profile?.preferences || {}),
+          edit_request_status: 'none'
+        };
+        const resetRes = (await axiosInstance.put('/contractors/profile', {
+          business_name: businessName,
+          website,
+          address,
+          preferences: {
+            ...updatedPrefs,
+            location: locationPref,
+            budgetMax: budgetPrefMax ? parseFloat(budgetPrefMax) : undefined
+          }
+        })) as any;
+
+        setSpecialtiesSuccess('Specialties synchronized successfully!');
+        setProfile(resetRes.success ? resetRes.data : catRes.data);
+        setIsEditingProfile(false);
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to save specialties.');
+      setSpecialtiesError(err?.message || 'Failed to save specialties.');
     } finally {
       setSaving(false);
     }
@@ -160,8 +235,8 @@ const ContractorProfilePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setErrorMsg(null);
-    setSuccessMsg(null);
+    setVerificationError(null);
+    setVerificationSuccess(null);
     setUploadingDoc(docLabel);
 
     try {
@@ -183,10 +258,10 @@ const ContractorProfilePage = () => {
           const filtered = prev.filter(d => !d.name.startsWith(docLabel));
           return [...filtered, newDoc];
         });
-        setSuccessMsg(`${docLabel} uploaded successfully!`);
+        setVerificationSuccess(`${docLabel} uploaded successfully!`);
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || `Failed to upload ${docLabel}.`);
+      setVerificationError(err?.message || `Failed to upload ${docLabel}.`);
     } finally {
       setUploadingDoc(null);
     }
@@ -195,16 +270,16 @@ const ContractorProfilePage = () => {
   // Submit Verification request
   const handleVerificationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccessMsg(null);
-    setErrorMsg(null);
+    setVerificationSuccess(null);
+    setVerificationError(null);
 
     if (!panNo || !aadhaarNo || !businessRegNo) {
-      setErrorMsg('Aadhaar, PAN, and License Registration ID are all required.');
+      setVerificationError('Aadhaar, PAN, and License Registration ID are all required.');
       return;
     }
 
     if (uploadedDocs.length < 1) {
-      setErrorMsg('Please upload at least one verification PDF/Image document.');
+      setVerificationError('Please upload at least one verification PDF/Image document.');
       return;
     }
 
@@ -218,11 +293,12 @@ const ContractorProfilePage = () => {
       })) as any;
 
       if (res.success) {
-        setSuccessMsg('Identity verification documents filed successfully for review.');
+        setVerificationSuccess('Identity verification documents filed successfully for review.');
         setProfile(res.data);
+        setIsEditingVerification(false);
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to submit verification request.');
+      setVerificationError(err?.message || 'Failed to submit verification request.');
     } finally {
       setSaving(false);
     }
@@ -253,6 +329,22 @@ const ContractorProfilePage = () => {
     rejected: 'danger'
   } as const;
 
+  const maskAadhaar = (num: string) => {
+    if (!num) return 'N/A';
+    const cleaned = num.replace(/\D/g, '');
+    if (cleaned.length < 4) return cleaned;
+    return `XXXX-XXXX-${cleaned.slice(-4)}`;
+  };
+
+  const maskPAN = (pan: string) => {
+    if (!pan) return 'N/A';
+    const cleaned = pan.trim();
+    if (cleaned.length < 5) return cleaned;
+    return `${cleaned.slice(0, 3)}XXXXX${cleaned.slice(-2)}`;
+  };
+
+  const isApproved = profile?.verification_status === 'approved';
+
   return (
     <div className="flex flex-col gap-8 w-full max-w-5xl mx-auto">
       {/* HEADER */}
@@ -280,9 +372,9 @@ const ContractorProfilePage = () => {
         </div>
       )}
 
-      {(successMsg || errorMsg) && (
-        <div className={`p-4 rounded-xl text-xs font-semibold ${successMsg ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'}`}>
-          {successMsg || errorMsg}
+      {errorMsg && (
+        <div className="p-4 rounded-xl text-xs font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400">
+          {errorMsg}
         </div>
       )}
 
@@ -295,54 +387,125 @@ const ContractorProfilePage = () => {
               <CardDescription>Setup address, website and bidding size preferences</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4">
-                <Input
-                  label="Registered Business Name"
-                  type="text"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  disabled={saving}
-                />
-                <Input
-                  label="Website URL"
-                  type="url"
-                  placeholder="https://apexelectricals.com"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  disabled={saving}
-                />
-                <Input
-                  label="Office Address"
-                  type="text"
-                  placeholder="Street, City, Country"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  disabled={saving}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                  <Input
-                    label="Preferred Bidding Location"
-                    type="text"
-                    placeholder="E.g. Delhi NCR"
-                    value={locationPref}
-                    onChange={(e) => setLocationPref(e.target.value)}
-                    disabled={saving}
-                  />
-                  <Input
-                    label="Preferred Max Project Budget (INR)"
-                    type="number"
-                    placeholder="E.g. 2000000"
-                    value={budgetPrefMax}
-                    onChange={(e) => setBudgetPrefMax(e.target.value)}
-                    disabled={saving}
-                  />
+              {isBusinessDetailsFilled && editRequestStatus !== 'approved' && !isEditingProfile ? (
+                /* READ-ONLY OVERVIEW */
+                <div className="flex flex-col gap-4 text-sm text-slate-300">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Business Name</span>
+                      <span className="text-white font-bold text-sm block mt-0.5">{profile?.business_name || 'Not provided'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Website URL</span>
+                      {profile?.website ? (
+                        <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-indigo-400 font-semibold block mt-0.5 hover:underline truncate">
+                          {profile.website}
+                        </a>
+                      ) : (
+                        <span className="text-slate-500 block mt-0.5 italic">Not provided</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Office Address</span>
+                    <span className="text-slate-200 block mt-0.5">{profile?.address || 'Not provided'}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800/40 pt-4">
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Preferred Bidding Location</span>
+                      <span className="text-slate-200 font-semibold block mt-0.5">{profile?.preferences?.location || 'Not provided'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Preferred Max Project Budget</span>
+                      <span className="text-slate-200 font-semibold block mt-0.5">
+                        {profile?.preferences?.budgetMax ? `₹${Number(profile.preferences.budgetMax).toLocaleString('en-IN')}` : 'Not provided'}
+                      </span>
+                    </div>
+                  </div>
+                  {editRequestStatus === 'none' ? (
+                    <Button onClick={handleRequestEdit} variant="primary" className="self-start mt-4" loading={saving}>
+                      Request Edit Access
+                    </Button>
+                  ) : editRequestStatus === 'pending' ? (
+                    <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold self-start">
+                      ⏳ Edit Request Pending Admin Approval
+                    </div>
+                  ) : (
+                    <Button onClick={() => setIsEditingProfile(true)} variant="secondary" className="self-start mt-4">
+                      Edit Profile
+                    </Button>
+                  )}
                 </div>
+              ) : (
+                /* EDIT FORM */
+                <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4">
+                  {isApproved && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold leading-relaxed">
+                      ⚠️ Editing your details will tag your modifications as &quot;Pending Admin Approval&quot;. Your current verified details will remain visible on the platform until approved.
+                    </div>
+                  )}
 
-                <Button type="submit" variant="primary" loading={saving} className="self-start mt-2">
-                  Save Business Details
-                </Button>
-              </form>
+                  <Input
+                    label="Registered Business Name"
+                    type="text"
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    disabled={saving}
+                  />
+                  <Input
+                    label="Website URL"
+                    type="url"
+                    placeholder="https://apexelectricals.com"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    disabled={saving}
+                  />
+                  <Input
+                    label="Office Address"
+                    type="text"
+                    placeholder="Street, City, Country"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    disabled={saving}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <Input
+                      label="Preferred Bidding Location"
+                      type="text"
+                      placeholder="E.g. Delhi NCR"
+                      value={locationPref}
+                      onChange={(e) => setLocationPref(e.target.value)}
+                      disabled={saving}
+                    />
+                    <Input
+                      label="Preferred Max Project Budget (INR)"
+                      type="number"
+                      placeholder="E.g. 2000000"
+                      value={budgetPrefMax}
+                      onChange={(e) => setBudgetPrefMax(e.target.value)}
+                      disabled={saving}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 mt-2">
+                    <Button type="submit" variant="primary" loading={saving} className="self-start">
+                      Save Business Details
+                    </Button>
+                    {isApproved && (
+                      <Button type="button" onClick={() => setIsEditingProfile(false)} variant="secondary" className="self-start">
+                        Cancel
+                      </Button>
+                    )}
+                    {businessSuccess && (
+                      <span className="text-emerald-600 font-bold text-xs">{businessSuccess}</span>
+                    )}
+                    {businessError && (
+                      <span className="text-rose-600 font-bold text-xs">{businessError}</span>
+                    )}
+                  </div>
+                </form>
+              )}
             </CardContent>
           </Card>
 
@@ -353,67 +516,140 @@ const ContractorProfilePage = () => {
               <CardDescription>Select construction services you qualify to bid on</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
-              {/* Work categories */}
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Service Categories</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-                  {masterCategories.map((cat) => {
-                    const checked = selectedCategories.includes(cat.id);
-                    return (
-                      <div
-                        key={cat.id}
-                        onClick={() => handleCheckboxToggle(cat.id, selectedCategories, setSelectedCategories)}
-                        className={`flex items-center gap-3 p-3.5 border rounded-xl cursor-pointer select-none transition-all duration-200 ${
-                          checked
-                            ? 'bg-indigo-600/10 border-indigo-500 text-indigo-300'
-                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          readOnly
-                          className="w-4 h-4 rounded text-indigo-600 bg-slate-950 border-slate-800"
-                        />
-                        <span className="text-xs font-semibold">{cat.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              {isSpecialtiesFilled && editRequestStatus !== 'approved' && !isEditingProfile ? (
+                /* READ-ONLY OVERVIEW */
+                <div className="flex flex-col gap-6">
+                  {/* Categories Badges */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Service Categories</span>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {profile?.categories && profile.categories.length > 0 ? (
+                        profile.categories.map((cat: any) => (
+                          <Badge key={cat.id} variant="success" size="md">
+                            {cat.name}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-500 italic">No categories selected</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Skills Badges */}
+                  <div className="flex flex-col gap-2 border-t border-slate-800/40 pt-4">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Trade Specialties / Skills</span>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {profile?.skills && profile.skills.length > 0 ? (
+                        profile.skills.map((skill: any) => (
+                          <Badge key={skill.id} variant="primary" size="md">
+                            {skill.name}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-500 italic">No skills selected</span>
+                      )}
+                    </div>
+                  </div>
 
-              {/* Trade skills checklist */}
-              <div className="flex flex-col gap-2 border-t border-slate-800/40 pt-4">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Trade Specialties / Skills</span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-                  {masterSkills.map((skill) => {
-                    const checked = selectedSkills.includes(skill.id);
-                    return (
-                      <div
-                        key={skill.id}
-                        onClick={() => handleCheckboxToggle(skill.id, selectedSkills, setSelectedSkills)}
-                        className={`flex items-center gap-3 p-3.5 border rounded-xl cursor-pointer select-none transition-all duration-200 ${
-                          checked
-                            ? 'bg-purple-600/10 border-purple-500 text-purple-300'
-                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          readOnly
-                          className="w-4 h-4 rounded text-purple-600 bg-slate-950 border-slate-800"
-                        />
-                        <span className="text-xs font-semibold">{skill.name}</span>
-                      </div>
-                    );
-                  })}
+                  {editRequestStatus === 'none' ? (
+                    <Button onClick={handleRequestEdit} variant="primary" className="self-start mt-2" loading={saving}>
+                      Request Edit Access
+                    </Button>
+                  ) : editRequestStatus === 'pending' ? (
+                    <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold self-start">
+                      ⏳ Edit Request Pending Admin Approval
+                    </div>
+                  ) : (
+                    <Button onClick={() => setIsEditingProfile(true)} variant="secondary" className="self-start mt-2">
+                      Edit Specialties
+                    </Button>
+                  )}
                 </div>
-              </div>
+              ) : (
+                /* EDIT FORM */
+                <div className="flex flex-col gap-6">
+                  {isApproved && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold leading-relaxed">
+                      ⚠️ Syncing specialties will tag your modifications as &quot;Pending Admin Approval&quot;. Your current verified profile remains active.
+                    </div>
+                  )}
 
-              <Button onClick={handleSaveSpecialties} variant="primary" loading={saving} className="self-start">
-                Save Specialties
-              </Button>
+                  {/* Work categories */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Service Categories</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
+                      {masterCategories.map((cat) => {
+                        const checked = selectedCategories.includes(cat.id);
+                        return (
+                          <div
+                            key={cat.id}
+                            onClick={() => handleCheckboxToggle(cat.id, selectedCategories, setSelectedCategories)}
+                            className={`flex items-center gap-3 p-3.5 border rounded-xl cursor-pointer select-none transition-all duration-200 ${
+                              checked
+                                ? 'bg-indigo-600/10 border-indigo-500 text-indigo-300'
+                                : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              readOnly
+                              className="w-4 h-4 rounded text-indigo-600 bg-slate-950 border-slate-800"
+                            />
+                            <span className="text-xs font-semibold">{cat.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Trade skills checklist */}
+                  <div className="flex flex-col gap-2 border-t border-slate-800/40 pt-4">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Trade Specialties / Skills</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
+                      {masterSkills.map((skill) => {
+                        const checked = selectedSkills.includes(skill.id);
+                        return (
+                          <div
+                            key={skill.id}
+                            onClick={() => handleCheckboxToggle(skill.id, selectedSkills, setSelectedSkills)}
+                            className={`flex items-center gap-3 p-3.5 border rounded-xl cursor-pointer select-none transition-all duration-200 ${
+                              checked
+                                ? 'bg-purple-600/10 border-purple-500 text-purple-300'
+                                : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              readOnly
+                              className="w-4 h-4 rounded text-purple-600 bg-slate-950 border-slate-800"
+                            />
+                            <span className="text-xs font-semibold">{skill.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button onClick={handleSaveSpecialties} variant="primary" loading={saving} className="self-start">
+                      Save Specialties
+                    </Button>
+                    {isApproved && (
+                      <Button onClick={() => setIsEditingProfile(false)} variant="secondary" className="self-start">
+                        Cancel
+                      </Button>
+                    )}
+                    {specialtiesSuccess && (
+                      <span className="text-emerald-600 font-bold text-xs">{specialtiesSuccess}</span>
+                    )}
+                    {specialtiesError && (
+                      <span className="text-rose-600 font-bold text-xs">{specialtiesError}</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -451,90 +687,185 @@ const ContractorProfilePage = () => {
           <CardDescription>File Aadhaar/PAN cards and licensing documents to authenticate your company identity</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleVerificationSubmit} className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                label="Personal 12-Digit Aadhaar No"
-                type="text"
-                placeholder="123456789012"
-                maxLength={12}
-                value={aadhaarNo}
-                onChange={(e) => setAadhaarNo(e.target.value.replace(/\D/g, ''))}
-                disabled={saving}
-              />
-              <Input
-                label="Personal 10-Character PAN"
-                type="text"
-                placeholder="ABCDE1234F"
-                maxLength={10}
-                value={panNo}
-                onChange={(e) => setPanNo(e.target.value.toUpperCase())}
-                disabled={saving}
-              />
-              <Input
-                label="Trade License / Registration ID"
-                type="text"
-                placeholder="LIC-1234-EXP-2027"
-                value={businessRegNo}
-                onChange={(e) => setBusinessRegNo(e.target.value)}
-                disabled={saving}
-              />
-            </div>
+          {uploadedDocs.length > 0 && !isEditingVerification ? (
+            /* VERIFICATION SUMMARY VIEW */
+            <div className="flex flex-col gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-950/20 border border-brand-border rounded-xl">
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Aadhaar Number</span>
+                  <span className="text-white font-mono font-bold text-sm block mt-0.5">{maskAadhaar(aadhaarNo)}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">PAN Number</span>
+                  <span className="text-white font-mono font-bold text-sm block mt-0.5">{maskPAN(panNo)}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">Trade License ID</span>
+                  <span className="text-white font-bold text-sm block mt-0.5 truncate">{businessRegNo || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold text-slate-500">Status</span>
+                  <Badge variant={profile ? verifBadgeVariants[profile.verification_status as 'pending'|'approved'|'rejected'] : 'neutral'} size="sm" className="mt-1 capitalize">
+                    {profile?.verification_status || 'Pending Verification'}
+                  </Badge>
+                </div>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-              {['Aadhaar Card Scan', 'PAN Card Scan', 'Trade License Scan', 'Insurance Certificate'].map((docLabel) => {
-                const isUploaded = uploadedDocs.some(d => d.name.startsWith(docLabel));
-                return (
-                  <div key={docLabel} className="flex flex-col gap-2 p-4 border border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/40 rounded-2xl transition-all duration-200">
-                    <span className="text-xs font-semibold text-slate-300">{docLabel}</span>
-                    <div className="relative flex-1 flex flex-col items-center justify-center py-6 cursor-pointer">
-                      {uploadingDoc === docLabel ? (
-                        <div className="flex flex-col items-center gap-1.5">
-                          <svg className="animate-spin h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          <span className="text-[10px] text-slate-500">Uploading...</span>
+              {/* Document rows */}
+              <div className="flex flex-col gap-3">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Uploaded Documents</span>
+                <div className="flex flex-col gap-2">
+                  {uploadedDocs.map((doc, idx) => {
+                    const parts = doc.name.split('_');
+                    const docLabelName = parts[0];
+                    const fileName = parts.slice(1).join('_') || 'verification_file';
+                    
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-3.5 bg-slate-950/40 border border-brand-border rounded-xl hover:bg-slate-950/60 transition-all text-xs">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-white text-sm">{docLabelName}</span>
+                          <span className="text-slate-500 italic truncate max-w-[250px] sm:max-w-md">{fileName}</span>
                         </div>
-                      ) : isUploaded ? (
-                        <div className="flex flex-col items-center gap-1.5 text-emerald-400">
-                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-[10px] text-emerald-500 font-bold">Uploaded</span>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="glass" size="sm">
+                            {profile?.verification_status === 'approved' ? 'Verified' : 'Pending Review'}
+                          </Badge>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3.5 py-1.5 text-xs font-semibold text-brand-orange bg-brand-orange-pale hover:bg-brand-orange hover:text-white rounded-lg border border-brand-orange/20 transition-all"
+                          >
+                            View
+                          </a>
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1.5 text-slate-500 hover:text-slate-400 transition-colors">
-                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <span className="text-[10px]">Select PDF/Image</span>
-                        </div>
-                      )}
-                      
-                      <input
-                        type="file"
-                        accept="application/pdf,image/*"
-                        onChange={(e) => handleFileUpload(e, docLabel)}
-                        disabled={uploadingDoc !== null || saving}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="border-t border-slate-800/40 pt-4 flex flex-col items-start gap-3">
+                <Button onClick={() => setIsEditingVerification(true)} variant="secondary">
+                  Update Verification Documents
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* VERIFICATION UPLOAD FORM */
+            <form onSubmit={handleVerificationSubmit} className="flex flex-col gap-5">
+              {isEditingVerification && uploadedDocs.length > 0 && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold leading-relaxed">
+                  ⚠️ Modifying document attachments will flag your status back to &quot;Pending Admin Approval&quot; and replace currently uploaded records upon submission.
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Personal 12-Digit Aadhaar No"
+                  type="text"
+                  placeholder="123456789012"
+                  maxLength={12}
+                  value={aadhaarNo}
+                  onChange={(e) => setAadhaarNo(e.target.value.replace(/\D/g, ''))}
+                  disabled={saving}
+                />
+                <Input
+                  label="Personal 10-Character PAN"
+                  type="text"
+                  placeholder="ABCDE1234F"
+                  maxLength={10}
+                  value={panNo}
+                  onChange={(e) => setPanNo(e.target.value.toUpperCase())}
+                  disabled={saving}
+                />
+                <Input
+                  label="Trade License / Registration ID"
+                  type="text"
+                  placeholder="LIC-1234-EXP-2027"
+                  value={businessRegNo}
+                  onChange={(e) => setBusinessRegNo(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                {['Aadhaar Card Scan', 'PAN Card Scan', 'Trade License Scan', 'Insurance Certificate'].map((docLabel) => {
+                  const isUploaded = uploadedDocs.some(d => d.name.startsWith(docLabel));
+                  return (
+                    <div key={docLabel} className="flex flex-col gap-2 p-4 border border-dashed border-slate-800 hover:border-slate-700 bg-slate-950/40 rounded-2xl transition-all duration-200">
+                      <span className="text-xs font-semibold text-slate-300">{docLabel}</span>
+                      <div className="relative flex-1 flex flex-col items-center justify-center py-6 cursor-pointer">
+                        {uploadingDoc === docLabel ? (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <svg className="animate-spin h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            <span className="text-[10px] text-slate-500">Uploading...</span>
+                          </div>
+                        ) : isUploaded ? (
+                          <div className="flex flex-col items-center gap-1.5 text-emerald-400">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-[10px] text-emerald-500 font-bold">Uploaded</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5 text-slate-500 hover:text-slate-400 transition-colors">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span className="text-[10px]">Select PDF/Image</span>
+                          </div>
+                        )}
+                        
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*"
+                          onChange={(e) => handleFileUpload(e, docLabel)}
+                          disabled={uploadingDoc !== null || saving}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            <Button
-              type="submit"
-              variant="primary"
-              loading={saving}
-              disabled={uploadedDocs.length < 1}
-              className="self-start mt-4"
-            >
-              Submit Verification Papers
-            </Button>
-          </form>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  loading={saving}
+                  disabled={uploadedDocs.length < 1}
+                  className="self-start"
+                >
+                  Submit Verification Papers
+                </Button>
+                {uploadedDocs.length > 0 && (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingVerification(false);
+                      setVerificationSuccess(null);
+                      setVerificationError(null);
+                    }}
+                    variant="secondary"
+                    className="self-start"
+                  >
+                    Cancel
+                  </Button>
+                )}
+                {verificationSuccess && (
+                  <span className="text-emerald-600 font-bold text-xs">{verificationSuccess}</span>
+                )}
+                {verificationError && (
+                  <span className="text-rose-600 font-bold text-xs">{verificationError}</span>
+                )}
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
